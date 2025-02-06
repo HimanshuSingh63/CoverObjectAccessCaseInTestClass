@@ -1,0 +1,69 @@
+@isTest
+private class ParentChildCreatorTest {
+    @TestSetup
+    static void setupTestData() {
+        // Create Permission Set
+        PermissionSet ps = new PermissionSet(
+            Label = 'Parent Object Access',
+            Name = 'Parent_Object_Access'
+        );
+        insert ps;
+        
+        // Create Permission Set Object Settings for Parent__c
+        ObjectPermissions parentObjPerm = new ObjectPermissions(
+            ParentId = ps.Id,
+            SObjectType = 'Parent__c',
+            PermissionsCreate = true,
+            PermissionsRead = true,
+            PermissionsEdit = true
+        );
+        insert parentObjPerm;
+        
+        // // Create Permission Set Object Settings for Child__c
+        ObjectPermissions childObjPerm = new ObjectPermissions(
+            ParentId = ps.Id,
+            SObjectType = 'Child__c',
+            PermissionsCreate = true,
+            PermissionsRead = true,
+            PermissionsEdit = true 
+        );
+        insert childObjPerm;
+        
+        // Create test user
+        Profile standardProfile = [SELECT Id FROM Profile WHERE Name = 'Standard User'];
+        User testUser = new User(
+            FirstName = 'Test',
+            LastName = 'User',
+            Email = 'test.user@test.com',
+            Username = 'test.user' + DateTime.now().getTime() + '@test.com',
+            Alias = 'tuser',
+            TimeZoneSidKey = 'America/Los_Angeles',
+            LocaleSidKey = 'en_US',
+            EmailEncodingKey = 'UTF-8',
+            LanguageLocaleKey = 'en_US',
+            ProfileId = standardProfile.Id
+        );
+        insert testUser;
+        
+        // Assign Permission Set to User
+        PermissionSetAssignment psa = new PermissionSetAssignment(
+            AssigneeId = testUser.Id,
+            PermissionSetId = ps.Id
+        );
+        insert psa;
+    }
+    
+    @isTest
+    static void testCreateParentWithPermissionSet() {
+        User testUser = [SELECT Id FROM User WHERE Username LIKE 'test.user%' LIMIT 1];
+        
+        Test.startTest();
+        System.runAs(testUser) {
+            Map<String, String> result = AccountContactCreator.createAccountWithContact(
+                'Test Parent', 'Test Child'
+            );
+            
+        }
+        Test.stopTest();
+    }
+}

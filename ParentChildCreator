@@ -1,0 +1,44 @@
+public class ParentChildCreator {
+    public static Map<String, String> createParentWithChild(String parentName, String childName) {
+        Map<String, String> result = new Map<String, String>();
+        
+        // Check Account permissions (object and field level)
+        if (Schema.sObjectType.Parent__c.isCreateable() && 
+            Schema.sObjectType.Parent__c.fields.Name.isCreateable()) {
+            
+            // Check Contact permissions (object and field level)
+            if (Schema.sObjectType.Child__c.isCreateable() && 
+                Schema.sObjectType.Child__c.fields.Name.isCreateable() &&
+                Schema.sObjectType.Child__c.fields.Parent__c.isCreateable()) {
+                
+                try {
+                    // Create Account
+                    Parent__c parent = new Parent__c(Name = parentName);
+                    insert parent;
+                    
+                    // Create Contact
+                    Child__c child = new Child__c(
+                        Parent__c = parent.Id,
+                        Name = childName
+                    );
+                    insert child;
+                    
+                    result.put('status', 'success');
+                    result.put('parent', parent.Id);
+                    result.put('child', child.Id);
+                } catch (DmlException e) {
+                    result.put('status', 'error');
+                    result.put('message', 'DML Error: ' + e.getMessage());
+                }
+            } else {
+                result.put('status', 'error');
+                result.put('message', 'Insufficient permissions for Child creation');
+            }
+        } else {
+            result.put('status', 'error');
+            result.put('message', 'Insufficient permissions for Parent creation');
+        }
+        
+        return result;
+    }
+}
